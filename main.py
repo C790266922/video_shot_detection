@@ -145,6 +145,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    cuts = []
     # use color histogram to identify key frames
     if args.hist:
         cuts = get_cuts_hist(frames)
@@ -172,3 +173,17 @@ if __name__ == "__main__":
             exit()
 
         print(cuts)
+
+    # plot result
+    plt.figure(figsize = (14, 6))
+    plt.scatter(cuts, np.zeros_like(cuts))
+    plt.legend('result')
+    # plot truth
+    truth = []
+    with open('cuts.txt') as f:
+        truth = [int(line.strip()) for line in f.readlines()]
+
+    plt.scatter(truth, np.array(len(truth) * [0.1]))
+    plt.legend('truth')
+    plt.grid()
+    plt.savefig('result.png')
