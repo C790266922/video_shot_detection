@@ -43,16 +43,15 @@ def get_hist_score(frames):
     return score, hists
 
 '''
-threshold hist score to find key frames
+threshold hist score to find cut frames
 '''
 def threshold_hist_score(score, threshold = 10.0):
-    key_frames = []
+    cuts = []
     for i, s in enumerate(score):
         if s > threshold:
-            key_frames.append(i)
+            cuts.append(i)
 
-    print(key_frames)
-    return key_frames
+    return cuts
 
 '''
 calculate moment invariants feature difference between frames
@@ -88,21 +87,21 @@ def get_mom_diff(frames):
     return mom_diffs
 
 '''
-threshold moment feature differences to get key frames
+threshold moment feature differences to get cut frames
 '''
-def threshold_mom_diff(mom_diffs, threshold = 1.0):
-    key_frames = []
+def threshold_mom_diff(mom_diffs, threshold = 0.1):
+    cuts = []
 
     for i, diff in enumerate(mom_diffs):
         if diff > threshold:
-            key_frames.append(i)
+            cuts.append(i)
 
-    return key_frames
+    return cuts
 
 '''
-use color histogram to get shot (start, end) frames
+use color histogram to get cut frames
 '''
-def get_shot_hist(frames):
+def get_cuts_hist(frames):
     # calculate hist score
     score, hists = get_hist_score(frames)
     # plot score
@@ -110,29 +109,30 @@ def get_shot_hist(frames):
     plt.plot(score)
     plt.savefig('score.png')
     # threshold score
-    shots = threshold_hist_score(score)
-    return shots
+    cuts = threshold_hist_score(score)
+    return cuts
 
 '''
-use moment features to get shot (start, end) frames
+use moment features to get cut frames
 '''
-def get_shot_mom(frames):
+def get_cuts_mom(frames):
     # calculate moment feature differences
     mom_diffs = get_mom_diff(frames)
-    print(mom_diffs)
-    print(np.mean(mom_diffs))
-    print(min(mom_diffs), max(mom_diffs))
+    # plot diffs
+    plt.figure(figsize = (8, 6))
+    plt.plot(mom_diffs)
+    plt.savefig('mom_diffs.png')
     # threshold diff
-    shots = threshold_mom_diff(mom_diffs)
-    print(shots)
+    cuts = threshold_mom_diff(mom_diffs)
 
-    return shots
+    return cuts
 
 if __name__ == "__main__":
     # load frames
     video_path = './movie.mp4'
     frames = get_frames(video_path)
 
+    # parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--hist', action = 'store_true')
     parser.add_argument('--moment', action = 'store_true')
@@ -142,24 +142,28 @@ if __name__ == "__main__":
 
     # use color histogram to identify key frames
     if args.hist:
-        shots = get_shot_hist(frames)
+        cuts = get_cuts_hist(frames)
+        print(cuts)
 
     # use moment features to identify key frames
     elif args.moment:
-        shots = get_shot_mom(frames)
+        cuts = get_cuts_mom(frames)
+        print(cuts)
 
     # use both algorithm to get 2 key frames sets, then union or intersect
     elif args.mix:
-        shots_hist = get_shot_hist(frames)
-        shots_mom = get_shot_mom(frames)
+        cuts_hist = get_cuts_hist(frames)
+        cuts_mom = get_cuts_mom(frames)
         
-        shots = set()
+        cuts = set()
         # union
         if args.mix == 1:
-            shots = set(shots_hist) | set(shots_mom)
+            cuts = set(cuts_hist) | set(cuts_mom)
         # intersect
         elif args.mix == 2:
-            shots = set(shots_hist) & set(shots_mom)
+            cuts = set(cuts_hist) & set(cuts_mom)
         else:
-            printf("Wrong argument for --mix (1 or 2)")
+            print("Wrong argument for --mix (1 or 2)")
             exit()
+
+        print(cuts)
