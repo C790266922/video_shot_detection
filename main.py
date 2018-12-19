@@ -61,13 +61,15 @@ def get_mom_diff(frames):
     mom_features = []
     # traverse all frame and calculate moment feature
     for frame in frames:
-        n20 = calc_n_pq(frame, 2, 0)
-        n02 = calc_n_pq(frame, 0, 2)
-        n11 = calc_n_pq(frame, 1, 1)
-        n30 = calc_n_pq(frame, 3, 0)
-        n03 = calc_n_pq(frame, 0, 2)
-        n12 = calc_n_pq(frame, 1, 2)
-        n21 = calc_n_pq(frame, 2, 1)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        mom = cv2.moments(gray)
+        n20 = mom['nu20']
+        n02 = mom['nu02']
+        n11 = mom['nu11']
+        n30 = mom['nu30']
+        n03 = mom['nu03']
+        n12 = mom['nu12']
+        n21 = mom['nu21']
 
         # use 3 moment invarants to form a feature vector
         f1 = n20 + n02
@@ -81,26 +83,9 @@ def get_mom_diff(frames):
     mom_diffs = []
     for i in range(1, len(mom_features)):
         diff = np.sum((mom_features[i] - mom_features[i - 1]) ** 2) 
-        mom_diff.append(diff)
+        mom_diffs.append(diff)
 
     return mom_diffs
-
-'''
-calculate n_pq
-'''
-def calc_n_pq(frame, p, q):
-    mom = cv2.moments(frame)
-    r = 1 + (p + q) / 2
-    mean_x = mom['m10'] / mom['m00']
-    mean_y = mom['m01'] / mom['m00']
-
-    mean_x_mat = np.array(frame.size * [mean_x]).reshape(frame.shape)
-    mean_y_mat = np.array(frame.size * [mean_y]).reshape(frame.shape)
-
-    n_pq = 1 / (m ** r) * np.sum((frame - mean_x_mat) ** p *\
-            (frame - mean_y_mat) ** q * frame)
-
-    return n_pq
 
 '''
 threshold moment feature differences to get key frames
