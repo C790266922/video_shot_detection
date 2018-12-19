@@ -45,13 +45,16 @@ def get_hist_score(frames):
 '''
 threshold hist score to find cut frames
 '''
-def threshold_hist_score(score, threshold = 10.0):
-    cuts = []
+def threshold_hist_score(score, threshold = 10.0, min_shot_size = 10):
+    # use min_shot_size to avoid including too many fade/transition frames
+    # initialize cuts to [0] to avoid cut[-1] index out of range error
+    cuts = [0]
     for i, s in enumerate(score):
-        if s > threshold:
+        if s > threshold and i - cuts[-1] > min_shot_size:
             cuts.append(i)
 
-    return cuts
+    # drop 0
+    return cuts[1:]
 
 '''
 calculate moment invariants feature difference between frames
@@ -89,14 +92,16 @@ def get_mom_diff(frames):
 '''
 threshold moment feature differences to get cut frames
 '''
-def threshold_mom_diff(mom_diffs, threshold = 0.1):
-    cuts = []
-
+def threshold_mom_diff(mom_diffs, threshold = 0.1, min_shot_size = 10):
+    # use min_shot_size to avoid including too many fade/transition frames
+    # use 0 to aviod cuts[-1] index out of range
+    cuts = [0]
     for i, diff in enumerate(mom_diffs):
-        if diff > threshold:
+        if diff > threshold and i - cuts[-1] > min_shot_size:
             cuts.append(i)
 
-    return cuts
+    # drop 0
+    return cuts[1:]
 
 '''
 use color histogram to get cut frames
