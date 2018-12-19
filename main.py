@@ -3,21 +3,26 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 
-def get_frames(folder):
-    # ignore hidden files
-    img_list = [x for x in os.listdir(folder) if not x.startswith('.')]
-    # sort
-    img_list = [folder + '/' + name for name in \
-            sorted(img_list, key = lambda x: int(x[:-4]))]
-    # load imgs
+'''
+load image sequence from video
+'''
+def get_frames(video_path):
+    cap = cv2.VideoCapture(video_path)
     frames = []
-    for filename in img_list:
-        frame = cv2.imread(filename)
+    while cap.isOpened():
+        success, frame = cap.read()
         if frame is not None:
             frames.append(frame)
+        else:
+            break
+
+    cap.release()
 
     return frames
 
+'''
+calculate color histogram and score
+'''
 def get_hist_score(frames):
     hists = []
     score = []
@@ -34,13 +39,11 @@ def get_hist_score(frames):
         s = cv2.compareHist(pair[0], pair[1], cv2.HISTCMP_CHISQR)
         score.append(s)
 
-    # plot score
-    plt.figure(figsize = (8, 6))
-    plt.plot(score)
-    plt.savefig('score.png')
-
     return score, hists
 
+'''
+threshold hist score to find key frames
+'''
 def threshold_hist_score(score, threshold = 10.0):
     key_frames = []
     for i, s in enumerate(score):
@@ -52,11 +55,14 @@ def threshold_hist_score(score, threshold = 10.0):
 
 
 if __name__ == "__main__":
-
     # load frames
-    folder = './pics'
-    frames = get_frames(folder)
+    video_path = './movie.mp4'
+    frames = get_frames(video_path)
     # calculate Hist score
     score, hists = get_hist_score(frames)
+    # plot score
+    plt.figure(figsize = (8, 6))
+    plt.plot(score)
+    plt.savefig('score.png')
     # threshold hist score
     key_frames = threshold_hist_score(score)
