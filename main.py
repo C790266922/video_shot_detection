@@ -157,11 +157,11 @@ if __name__ == "__main__":
         
         cuts = set()
         # union
-        if args.mix == 1:
-            cuts = set(cuts_hist) | set(cuts_mom)
+        if args.mix == '1':
+            cuts = sorted(set(cuts_hist) | set(cuts_mom))
         # intersect
-        elif args.mix == 2:
-            cuts = set(cuts_hist) & set(cuts_mom)
+        elif args.mix == '2':
+            cuts = sorted(set(cuts_hist) & set(cuts_mom))
         else:
             print("Wrong argument for --mix (1 or 2)")
             exit()
