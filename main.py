@@ -45,7 +45,7 @@ def get_hist_score(frames):
 '''
 threshold hist score to find cut frames
 '''
-def threshold_hist_score(score, threshold = 10.0, min_shot_size = 10):
+def threshold_hist_score(score, threshold = 4.0, min_shot_size = 10):
     # use min_shot_size to avoid including too many fade/transition frames
     # initialize cuts to [0] to avoid cut[-1] index out of range error
     cuts = [0]
@@ -92,7 +92,7 @@ def get_mom_diff(frames):
 '''
 threshold moment feature differences to get cut frames
 '''
-def threshold_mom_diff(mom_diffs, threshold = 0.1, min_shot_size = 10):
+def threshold_mom_diff(mom_diffs, threshold = 0.01, min_shot_size = 10):
     # use min_shot_size to avoid including too many fade/transition frames
     # use 0 to aviod cuts[-1] index out of range
     cuts = [0]
@@ -106,21 +106,21 @@ def threshold_mom_diff(mom_diffs, threshold = 0.1, min_shot_size = 10):
 '''
 use color histogram to get cut frames
 '''
-def get_cuts_hist(frames):
+def get_cuts_hist(frames, threshold = 4.0):
     # calculate hist score
     score, hists = get_hist_score(frames)
     # plot score
     plt.figure(figsize = (8, 6))
     plt.plot(score)
-    plt.savefig('score.png')
+    plt.savefig('hist_score.png')
     # threshold score
-    cuts = threshold_hist_score(score)
+    cuts = threshold_hist_score(score, threshold)
     return cuts
 
 '''
 use moment features to get cut frames
 '''
-def get_cuts_mom(frames):
+def get_cuts_mom(frames, threshold = 0.01):
     # calculate moment feature differences
     mom_diffs = get_mom_diff(frames)
     # plot diffs
@@ -128,7 +128,7 @@ def get_cuts_mom(frames):
     plt.plot(mom_diffs)
     plt.savefig('mom_diffs.png')
     # threshold diff
-    cuts = threshold_mom_diff(mom_diffs)
+    cuts = threshold_mom_diff(mom_diffs, threshold)
 
     return cuts
 
@@ -139,27 +139,25 @@ if __name__ == "__main__":
 
     # parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--hist', action = 'store_true')
-    parser.add_argument('--moment', action = 'store_true')
+    parser.add_argument('--hist')
+    parser.add_argument('--moment')
     parser.add_argument('--mix')
 
     args = parser.parse_args()
 
     cuts = []
     # use color histogram to identify key frames
-    if args.hist:
-        cuts = get_cuts_hist(frames)
-        print(cuts)
+    if args.hist and not args.mix:
+        cuts = get_cuts_hist(frames, float(args.hist))
 
     # use moment features to identify key frames
-    elif args.moment:
-        cuts = get_cuts_mom(frames)
-        print(cuts)
+    elif args.moment and not args.mix:
+        cuts = get_cuts_mom(frames, float(args.moment))
 
     # use both algorithm to get 2 key frames sets, then union or intersect
     elif args.mix:
-        cuts_hist = get_cuts_hist(frames)
-        cuts_mom = get_cuts_mom(frames)
+        cuts_hist = get_cuts_hist(frames, float(args.hist))
+        cuts_mom = get_cuts_mom(frames, float(args.moment))
         
         cuts = set()
         # union
@@ -172,18 +170,21 @@ if __name__ == "__main__":
             print("Wrong argument for --mix (1 or 2)")
             exit()
 
-        print(cuts)
-
     # plot result
     plt.figure(figsize = (14, 6))
-    plt.scatter(cuts, np.zeros_like(cuts))
-    plt.legend('result')
+    plt.scatter(cuts, np.array(len(cuts) * ['result']))
     # plot truth
     truth = []
     with open('cuts.txt') as f:
         truth = [int(line.strip()) for line in f.readlines()]
 
-    plt.scatter(truth, np.array(len(truth) * [0.1]))
-    plt.legend('truth')
-    plt.grid()
+    plt.scatter(truth, np.array(len(truth) * ['truth']))
+    
+    for cut in truth:
+        plt.plot(np.array(2 * [cut]), np.array(['truth', 'result']), color = 'red')
+
     plt.savefig('result.png')
+
+    # print result
+    print('truth:', truth)
+    print('result:', cuts)
